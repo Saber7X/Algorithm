@@ -946,3 +946,359 @@ vector<int> div(vector<int> &A, int b, int &r)
     return C;
 }
 ```
+#图论
+##图的存储
+
+ - 图一般有两种存储方式：
+
+1. 邻接矩阵。开个二维数组，g[i][j] 表示点 i 和点 j 之间的边权。
+2. 邻接表。邻接表有两种常用写法，我推荐第二种，代码更简洁，效率也更高，后面有代码模板：
+    - 二维vector：vector<vector<int>> edge，edge[i][j] 表示第 i 个点的第 j 条邻边。
+- 数组模拟邻接表：为每个点开个单链表，分别存储该点的所有邻边。
+
+####邻接表初始化
+```cpp
+void init()//初始化
+{
+    memset(h, -1, sizeof h)//head = -1;
+    idx = 0;
+}
+```
+
+####邻接表加边
+```cpp
+void add(int a,int b) //将b插入a前面 a作为根 所以处在链表的最后（头插法）
+{
+    e[idx]=b;
+    ne[idx]=h[a];
+    h[a]=idx++;
+}
+//无向边就添加a-b , b-a 两条边
+```
+
+####将坐标是k后面的点删掉
+```cpp
+void del(int k)
+{
+    ne[k] = ne[ne[k]];//使k的next指向k的下一个的下一个坐标，也就是跳过这个
+}
+```
+#### 将x插到头结点,x为值
+```
+void  add_to_head(int x)
+{
+    e[idx] = x;//将空指针和x联系在一起
+    ne[idx] = head;//将x的next坐标指向原本的头结点坐标
+    head =idx;//将头坐标指向X的坐标
+    idx++;//更新当前可用新坐标
+}
+```
+#### 树和图的DFS
+```
+//*******基本框架
+void dfs(int u)
+{
+    st[u] = true; // 标记一下，记录为已经被搜索过了，下面进行搜索过程
+    for(int i = h[u]; i != -1; i = ne[i] )
+    {
+        int j = e[i];
+        if(!st[j]) 
+        {
+            dfs(j);
+        }
+    }
+}
+//******树的重心
+int h[N]; //邻接表存储树，有n个节点，所以需要n个队列头节点
+int e[M]; //存储元素
+int ne[M]; //存储列表的next值
+int idx; //单链表指针
+int n; //题目所给的输入，n个节点
+int ans = N; //表示重心的所有的子树中，最大的子树的结点数目
+bool st[N]; //记录节点是否被访问过，访问过则标记为true
+
+//a所对应的单链表中插入b  a作为根 
+void add(int a, int b) {
+    e[idx] = b, ne[idx] = h[a], h[a] = idx++;
+}
+int dfs(int u) {
+    int res = 0; //存储 删掉某个节点之后，最大的连通子图节点数
+    st[u] = true; //标记访问过u节点
+    int sum = 1; //存储 以u为根的树 的节点数, 包括u，如图中的4号节点
+
+    //访问u的每个子节点
+    for (int i = h[u]; i != -1; i = ne[i]) {
+        int j = e[i];
+        //因为每个节点的编号都是不一样的，所以 用编号为下标 来标记是否被访问过
+        if (!st[j]) {
+            int s = dfs(j);  // u节点的单棵子树节点数 如图中的size值
+            res = max(res, s); // 记录最大联通子图的节点数
+            sum += s; //以j为根的树 的节点数
+        }
+    }
+    
+    //n-sum 如图中的n-size值，不包括根节点4；
+    res = max(res, n - sum); // 选择u节点为重心，最大的 连通子图节点数
+    ans = min(res, ans); //遍历过的假设重心中，最小的最大联通子图的 节点数
+    return sum;
+}
+```
+#### 树和图的BFS
+```
+int bfs()
+{
+	memset(d, -1, sizeof d);
+	q[0] = 1;//把第一个点放进队列 
+	int hh = 0, tt = 0;
+	d[1] = 0;//第一个点到起点的距离为0 
+	
+	while(hh <= tt)//手动模拟队列 
+	{
+		int t = q[hh ++] ;//取出队头 
+		
+		for(int i = h[t]; i != -1; i = ne[i])//模板 
+		{
+			int j = e[i];
+			
+			if(d[j] == -1)//如果没有走过 
+			{
+				d[j] = d[t] + 1;//更新当前点到起点的距离 
+				
+				q[++tt] = j;//放入队列 
+			}
+		}
+	}
+	return d[n];
+}
+```
+
+##最短路
+- 最短路算法分为两大类：
+
+1. 单源最短路，常用算法有：
+**(1)** **dijkstra**，只有所有边的权值为正时才可以使用。在稠密图上的时间复杂度是 O(n2)，稀疏图上的时间复杂度是 O(mlogn)。
+**(2)** **spfa**，不论边权是正的还是负的，都可以做。算法平均时间复杂度是 O(km)，k 是常数。 强烈推荐该算法。
+2. 多源最短路，一般用floyd算法。代码很短，三重循环，时间复杂度是 O(n3)。
+
+##题目大意
+给一张无向图， n 个点 m 条边，求从1号点到 n 号点的最短路径。
+输入中可能包含重边。
+
+###dijkstra算法 O(n2)
+
+最裸的dijkstra算法，不用堆优化。每次暴力循环找距离最近的点。
+只能处理边权为正数的问题。
+图用邻接矩阵存储。
+```cpp
+#include <cstdio>
+#include <cstring>
+#include <iostream>
+#include <algorithm>
+
+using namespace std;
+
+const int N = 1010, M = 2000010, INF = 1000000000;
+
+int n, m;
+int g[N][N], dist[N];   // g[][]存储图的邻接矩阵, dist[]表示每个点到起点的距离
+bool st[N];     // 存储每个点的最短距离是否已确定
+
+void dijkstra()
+{
+    for (int i = 1; i <= n; i++) dist[i] = INF;
+    dist[1] = 0;
+    for (int i = 0; i < n; i++)
+    {
+        int id, mind = INF;
+        for (int j = 1; j <= n; j++)
+            if (!st[j] && dist[j] < mind)
+            {
+                mind = dist[j];
+                id = j;
+            }
+        st[id] = 1;
+        for (int j = 1; j <= n; j++) dist[j] = min(dist[j], dist[id] + g[id][j]);
+    }
+}
+
+int main()
+{
+    cin >> m >> n;
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= n; j++)
+            g[i][j] = INF;
+    for (int i = 0; i < m; i++)
+    {
+        int a, b, c;
+        cin >> a >> b >> c;
+        g[a][b] = g[b][a] = min(g[a][b], c);
+    }
+    dijkstra();
+    cout << dist[n] << endl;
+    return 0;
+}
+```
+
+
+###dijkstra+heap优化 O(mlogn)
+用堆维护所有点到起点的距离。时间复杂度是 O(mlogn)。
+这里我们可以手写堆，可以支持对堆中元素的修改操作，堆中元素个数不会超过 n。也可以直接使用STL中的priority_queue，但不能支持对堆中元素的修改，不过我们可以将所有修改过的点直接插入堆中，堆中会有重复元素，但堆中元素总数不会大于 m。
+只能处理边权为正数的问题。
+图用邻接表存储。
+
+```cpp
+typedef pair<int, int> PII;
+
+int n;      // 点的数量
+int h[N], w[N], e[N], ne[N], idx;       // 邻接表存储所有边
+int dist[N];        // 存储所有点到1号点的距离
+bool st[N];     // 存储每个点的最短距离是否已确定
+
+// 求1号点到n号点的最短距离，如果不存在，则返回-1
+int dijkstra()
+{
+    memset(dist, 0x3f, sizeof dist);
+    dist[1] = 0;
+    priority_queue<PII, vector<PII>, greater<PII>> heap;
+    heap.push({0, 1});      // first存储距离，second存储节点编号
+
+    while (heap.size())
+    {
+        auto t = heap.top();
+        heap.pop();
+
+        int ver = t.second, distance = t.first;
+
+        if (st[ver]) continue;
+        st[ver] = true;
+
+        for (int i = h[ver]; i != -1; i = ne[i])
+        {
+            int j = e[i];
+            if (dist[j] > distance + w[i])
+            {
+                dist[j] = distance + w[i];
+                heap.push({dist[j], j});
+            }
+        }
+    }
+
+    if (dist[n] == 0x3f3f3f3f) return -1;
+    return dist[n];
+}
+```
+
+###spfa算法 O(km)
+bellman-ford算法的优化版本，可以处理存在负边权的最短路问题。
+最坏情况下的时间复杂度是 O(nm)，但实践证明spfa算法的运行效率非常高，期望运行时间是 O(km)，其中 k 是常数。
+但需要注意的是，在网格图中，spfa算法的效率比较低，如果边权为正，则尽量使用 dijkstra 算法。
+
+图采用邻接表存储。
+队列为手写的循环队列。
+
+```cpp
+#include <cstdio>
+#include <cstring>
+#include <iostream>
+#include <algorithm>
+#include <queue>
+
+using namespace std;
+
+const int N = 1010, M = 2000010, INF = 1000000000;
+
+int n, m;
+int dist[N], q[N];      // dist表示每个点到起点的距离, q 是队列
+int h[N], e[M], v[M], ne[M], idx;       // 邻接表
+bool st[N];     // 存储每个点是否在队列中
+
+void add(int a, int b, int c)
+{
+    e[idx] = b, v[idx] = c, ne[idx] = h[a], h[a] = idx++;
+}
+
+void spfa()
+{
+    int hh = 0, tt = 0;
+    for (int i = 1; i <= n; i++) dist[i] = INF;
+    dist[1] = 0;
+    q[tt++] = 1, st[1] = 1;
+    while (hh != tt)
+    {
+        int t = q[hh++];
+        st[t] = 0;
+        if (hh == n) hh = 0;
+        for (int i = h[t]; i != -1; i = ne[i])
+            if (dist[e[i]] > dist[t] + v[i])
+            {
+                dist[e[i]] = dist[t] + v[i];
+                if (!st[e[i]])
+                {
+                    st[e[i]] = 1;
+                    q[tt++] = e[i];
+                    if (tt == n) tt = 0;
+                }
+            }
+    }
+}
+
+int main()
+{
+    memset(h, -1, sizeof h);
+    cin >> m >> n;
+    for (int i = 0; i < m; i++)
+    {
+        int a, b, c;
+        cin >> a >> b >> c;
+        add(a, b, c);
+        add(b, a, c);
+    }
+    spfa();
+    cout << dist[n] << endl;
+    return 0;
+}
+```
+
+###floyd算法 O(n3)
+标准弗洛伊德算法，三重循环。循环结束之后 d[i][j] 存储的就是点 i 到点 j 的最短距离。
+需要注意循环顺序不能变：第一层枚举中间点，第二层和第三层枚举起点和终点。
+
+由于这道题目的数据范围较大，点数最多有1000个，因此floyd算法会超时。
+但我们的目的是给出算法模板哦~
+
+```cpp
+#include <cstdio>
+#include <cstring>
+#include <iostream>
+#include <algorithm>
+#include <queue>
+
+using namespace std;
+
+const int N = 1010, M = 2000010, INF = 1000000000;
+
+int n, m;
+int d[N][N];    // 存储两点之间的最短距离
+
+int main()
+{
+    cin >> m >> n;
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= n; j++)
+            d[i][j] = i == j ? 0 : INF;
+    for (int i = 0; i < m; i++)
+    {
+        int a, b, c;
+        cin >> a >> b >> c;
+        d[a][b] = d[b][a] = min(c, d[a][b]);
+    }
+    // floyd 算法核心
+    for (int k = 1; k <= n; k++)
+        for (int i = 1; i <= n; i++)
+            for (int j = 1; j <= n; j++)
+                d[i][j] = min(d[i][j], d[i][k] + d[k][j]);
+    cout << d[1][n] << endl;
+    return 0;
+}
+```
+
