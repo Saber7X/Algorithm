@@ -225,14 +225,14 @@ int sg(int x)
 ### 快速乘法取模
 
 ```cpp
-typedef long long LL;
-LL q_mul(LL a, LL b, LL p){//快速乘法取模
-    LL ans = 0;
-    while (b){
-        if(b&1LL) ans=(ans+a)%p;
-        //or ans=(ans+(b%2*a)%p)%p;
-        a = (a +a) % p;
-        b >>= 1;
+long long ksc(long long a, long long b) {
+    long long ans = 0;
+    while(b != 0) {
+	if(b & 1 != 0) {
+	    ans += a;
+	}
+	a += a;
+	b >>= 1;
     }
     return ans;
 }
@@ -892,7 +892,39 @@ int dfs(int u) {
 }
 ```
 #### 树和图的BFS
+```cpp
+int n, m;
+int h[N], e[M], ne[M], idx;
+int d[N];
+
+queue<int> q;
+
+void add(int a, int b)  // 添加一条边a->b
+{
+    e[idx] = b, ne[idx] = h[a], h[a] = idx ++ ;
+}
+
+void bfs()
+{
+    q.push(1);
+    d[1] = 0;
+    while (!q.empty())
+    {
+        int t = q.front();
+        q.pop();
+        for (int i = h[t]; i != -1; i = ne[i] )
+        {
+            int j = e[i];
+            if (d[j] == -1)
+            {
+                d[j] = d[t] + 1;
+                q.push(e[i]);
+            }
+        }
+    }
+}
 ```
+```cpp
 int bfs()
 {
 	memset(d, -1, sizeof d);
